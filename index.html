@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pipeline — Job Outreach Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2A41; --ink-2:#28395a; --cream:#FBF7F0;
+    --amber:#E8A33D; --amber-deep:#C97F1F;
+    --sage:#4A7C59; --sage-bg:#E7F0E9;
+    --coral:#C96A5D; --coral-bg:#F5E5E2;
+    --slate:#6B7280; --card:#FFFFFF; --border:#E4DFD3;
+    --shadow: 0 1px 2px rgba(27,42,65,0.06), 0 4px 14px rgba(27,42,65,0.05);
+    --shadow-lift: 0 10px 30px rgba(27,42,65,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+
+  .shell{display:flex;min-height:100vh;}
+  .sidebar{width:220px;flex:0 0 220px;background:var(--ink);color:var(--cream);padding:22px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;}
+  .brand{display:flex;align-items:center;gap:9px;padding:4px 8px 22px;}
+  .brand-mark{width:26px;height:26px;border-radius:7px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;color:var(--ink);font-size:15px;}
+  .brand-name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;letter-spacing:-.01em;}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:500;color:#C9D3E0;margin-bottom:2px;transition:background .12s;}
+  .nav-item svg{flex:0 0 16px;opacity:.85;}
+  .nav-item:hover{background:rgba(255,255,255,0.06);color:#fff;}
+  .nav-item.active{background:rgba(232,163,61,0.16);color:var(--amber);}
+  .nav-item.active svg{opacity:1;}
+  .sidebar-footer{margin-top:auto;padding:12px 8px 4px;font-size:11px;color:#7E8CA6;line-height:1.5;}
+
+  .main{flex:1;min-width:0;padding:26px 30px 80px;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:22px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber-deep);margin:0 0 4px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:32px;margin:0;letter-spacing:-0.01em;}
+  .subtitle{color:var(--slate);font-size:13.5px;margin-top:5px;}
+  .btn{font-family:inherit;font-weight:600;font-size:13.5px;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;transition:transform .1s, opacity .1s;}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--ink);color:var(--cream);}
+  .btn-primary:hover{background:var(--ink-2);}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--border);}
+  .btn-ghost:hover{background:#fff;}
+  .btn-danger{background:var(--coral-bg);color:var(--coral);}
+  .btn-sm{padding:6px 11px;font-size:12px;border-radius:6px;}
+
+  .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:22px;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);}
+  .stat .num{font-family:'Fraunces',serif;font-size:25px;font-weight:600;line-height:1;}
+  .stat .label{font-size:10.5px;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;margin-top:6px;}
+  .stat.accent-sage .num{color:var(--sage);}
+  .stat.accent-amber .num{color:var(--amber-deep);}
+  .stat.accent-coral .num{color:var(--coral);}
+
+  .controls{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+  .search{flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;background:#fff;}
+  select.filter{padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:#fff;}
+
+  .board{display:flex;gap:14px;overflow-x:auto;padding-bottom:16px;}
+  .col{flex:0 0 258px;background:rgba(255,255,255,0.45);border-radius:12px;padding:9px;transition:background .15s;}
+  .col.drag-over{background:rgba(232,163,61,0.14);outline:2px dashed var(--amber);}
+  .col-head{display:flex;justify-content:space-between;align-items:center;padding:6px 8px 10px;}
+  .col-title{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--slate);}
+  .col-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+  .col-count{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--border);border-radius:20px;padding:2px 8px;}
+  .card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:10px;padding:12px 13px;margin-bottom:9px;cursor:grab;box-shadow:var(--shadow);transition:transform .1s, box-shadow .1s;}
+  .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lift);}
+  .card.dragging{opacity:.4;}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+  .avatar{width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:0 0 26px;font-family:'IBM Plex Mono',monospace;}
+  .card .cname{font-weight:600;font-size:14px;margin:0 0 2px;}
+  .card .crole{font-size:12px;color:var(--slate);margin-bottom:8px;}
+  .card .meta{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--slate);}
+  .chip{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--border);}
+  .prio-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .stale{color:var(--coral);font-weight:600;}
+  .empty-col{font-size:11.5px;color:var(--slate);opacity:.55;padding:16px 8px;text-align:center;}
+  .approach-tag{font-size:9.5px;color:var(--slate);text-transform:uppercase;letter-spacing:.04em;}
+
+  .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate);padding:12px 14px;border-bottom:1px solid var(--border);background:#FAF7F1;}
+  td{padding:12px 14px;border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  tr.row-hover:hover{background:#FAF7F1;cursor:pointer;}
+  .badge{display:inline-block;font-size:11px;font-weight:600;color:#fff;padding:3px 9px;border-radius:20px;}
+
+  .analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+  .panel h3{font-family:'Fraunces',serif;font-size:17px;margin:0 0 14px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .bar-label{flex:0 0 130px;font-size:12px;color:var(--slate);}
+  .bar-track{flex:1;height:16px;background:var(--cream);border-radius:6px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:6px;transition:width .4s ease;}
+  .bar-val{flex:0 0 26px;font-size:12px;font-weight:600;text-align:right;}
+  .big-stat{text-align:center;padding:10px;}
+  .big-stat .num{font-family:'Fraunces',serif;font-size:44px;font-weight:600;color:var(--sage);}
+  .big-stat .label{color:var(--slate);font-size:12.5px;margin-top:4px;}
+
+  .settings-block{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .settings-block h3{font-family:'Fraunces',serif;font-size:17px;margin:0 0 6px;}
+  .settings-block p{color:var(--slate);font-size:13px;margin:0 0 12px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(27,42,65,0.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--cream);border-radius:16px;max-width:660px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,0.25);}
+  .modal h2{font-family:'Fraunces',serif;font-size:23px;margin:0 0 3px;}
+  .modal .close-x{position:absolute;top:18px;right:22px;background:none;border:none;font-size:19px;cursor:pointer;color:var(--slate);}
+  .modal-inner{position:relative;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px;}
+  .field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:13px;}
+  .field{margin-top:13px;}
+  .field.full{grid-column:1/-1;}
+  label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--slate);margin-bottom:5px;}
+  input,textarea,select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink);}
+  textarea{resize:vertical;min-height:56px;}
+  .upload-box{border:1.5px dashed var(--border);border-radius:9px;padding:12px 14px;background:#fff;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--slate);}
+  .upload-box input[type=file]{border:none;padding:0;font-size:12px;}
+  .upload-status{font-size:11.5px;margin-top:5px;}
+  .upload-status.ok{color:var(--sage);}
+  .upload-status.err{color:var(--coral);}
+  .modal-actions{display:flex;justify-content:space-between;margin-top:22px;}
+  .modal-actions .right{display:flex;gap:8px;}
+
+  .detail-head{display:flex;justify-content:space-between;align-items:flex-start;}
+  .stage-pill{display:inline-block;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;margin-top:6px;}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0;}
+  .detail-block{background:#fff;border:1px solid var(--border);border-radius:10px;padding:13px;}
+  .detail-block h4{margin:0 0 7px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate);}
+  .detail-block p{margin:0;font-size:13px;white-space:pre-wrap;line-height:1.5;}
+  .stage-buttons{display:flex;gap:6px;flex-wrap:wrap;margin:13px 0;}
+  .stage-btn{font-size:11px;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:#fff;cursor:pointer;}
+  .stage-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .log-entry{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .log-date{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--slate);white-space:nowrap;padding-top:1px;}
+  .log-add{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .log-add select{flex:0 0 128px;}
+  .log-add input{flex:1;min-width:140px;}
+
+  .round-card{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+  .round-card .rtitle{font-weight:600;font-size:13px;display:flex;justify-content:space-between;}
+  .round-card .rmeta{font-size:12px;color:var(--slate);margin-top:3px;}
+  .round-outcome{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;color:#fff;}
+  .round-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;}
+  .round-form .full{grid-column:1/-1;}
+  .round-form label{margin-bottom:3px;}
+
+  .empty-state{text-align:center;padding:70px 20px;color:var(--slate);}
+  .empty-state h3{font-family:'Fraunces',serif;font-size:21px;color:var(--ink);margin-bottom:6px;}
+
+  @media (max-width:900px){
+    .sidebar{position:fixed;bottom:0;top:auto;width:100%;height:auto;flex-direction:row;padding:8px;z-index:40;}
+    .brand,.sidebar-footer{display:none;}
+    .nav-item{flex-direction:column;font-size:10px;gap:3px;flex:1;text-align:center;}
+    .main{padding:18px 14px 90px;}
+    .stats{grid-template-columns:repeat(3,1fr);}
+    .field-row,.field-row3,.detail-grid,.analytics-grid,.round-form{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="sidebar">
+    <div class="brand"><div class="brand-mark">P</div><div class="brand-name">Pipeline</div></div>
+    <div class="nav-item active" data-view="board" onclick="switchView('board')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="6" height="16" rx="1"/><rect x="10" y="4" width="6" height="10" rx="1"/><rect x="17" y="4" width="4" height="7" rx="1"/></svg>
+      Board
+    </div>
+    <div class="nav-item" data-view="companies" onclick="switchView('companies')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      Companies
+    </div>
+    <div class="nav-item" data-view="analytics" onclick="switchView('analytics')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+      Analytics
+    </div>
+    <div class="nav-item" data-view="settings" onclick="switchView('settings')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+      Settings
+    </div>
+    <div class="sidebar-footer" id="sidebarFooter">Your data stays in this browser only. Nothing is ever sent to a server — not even to us.</div>
+  </div>
+
+  <div class="main">
+
+    <div id="view-board">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">Outreach Pipeline</p>
+          <h1>Where every application stands</h1>
+          <p class="subtitle">Drag cards between stages as things move.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add company</button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="controls">
+        <input type="text" class="search" id="searchInput" placeholder="Search company, role, or contact..." oninput="render()">
+        <select class="filter" id="channelFilter" onchange="render()"><option value="">All channels</option></select>
+        <select class="filter" id="prioFilter" onchange="render()">
+          <option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option>
+        </select>
+      </div>
+      <div id="boardWrap"></div>
+    </div>
+
+    <div id="view-companies" style="display:none;">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">Full List</p>
+          <h1>All companies</h1>
+          <p class="subtitle">Every application in one sortable table.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add company</button>
+      </div>
+      <div class="controls">
+        <input type="text" class="search" id="searchInput2" placeholder="Search company, role, or contact..." oninput="render()">
+        <select class="filter" id="sortBy2" onchange="render()">
+          <option value="recent">Sort: Recently active</option>
+          <option value="stale">Sort: Needs follow-up first</option>
+          <option value="name">Sort: Company name</option>
+        </select>
+      </div>
+      <div class="table-wrap"><div id="tableWrap"></div></div>
+    </div>
+
+    <div id="view-analytics" style="display:none;">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">Insights</p>
+          <h1>How your search is going</h1>
+          <p class="subtitle">Where replies come from, and where things stall.</p>
+        </div>
+      </div>
+      <div id="analyticsWrap"></div>
+    </div>
+
+    <div id="view-settings" style="display:none;">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">Data</p>
+          <h1>Settings</h1>
+        </div>
+      </div>
+      <div class="settings-block">
+        <h3>How your privacy works here</h3>
+        <p>This tool has no server and no login. Every company you add is saved directly in this browser's local storage, on this device only. Nothing is ever transmitted anywhere — not to the person who built this page, not to any company, not to anyone. If you clear your browser data or switch devices, your data won't follow unless you export and re-import it below.</p>
+      </div>
+      <div class="settings-block">
+        <h3>What this page is for</h3>
+        <p>This is only for backing up or restoring your <b>whole pipeline</b> as a single file. It is not for uploading a resume or a JD — that upload lives inside the "Add / Edit company" form instead, in the "Upload JD / notes document" field.</p>
+      </div>
+      <div class="settings-block">
+        <h3>Export your data</h3>
+        <p>Download everything as a JSON file — a personal backup you control.</p>
+        <button class="btn btn-ghost" onclick="exportData()">Download backup</button>
+      </div>
+      <div class="settings-block">
+        <h3>Import data</h3>
+        <p>Restore from a previously exported backup file (must be a <code>.json</code> file downloaded from this same tool — not a resume, PDF, or Word doc).</p>
+        <input type="file" id="importFile" accept="application/json" onchange="importData(event)">
+        <div id="importStatus" class="upload-status"></div>
+      </div>
+      <div class="settings-block">
+        <h3>Clear all data</h3>
+        <p>Permanently remove every company and activity log. This cannot be undone.</p>
+        <button class="btn btn-danger" onclick="clearAllData()">Clear everything</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-inner">
+      <button class="close-x" onclick="closeModal()">✕</button>
+      <h2 id="modalTitle">Add company</h2>
+      <p class="subtitle" style="margin-top:0;">Fill in what you know now — you can edit anything later.</p>
+
+      <div class="field full">
+        <label>Company name *</label>
+        <input id="f_name" placeholder="e.g. Astrotalk">
+      </div>
+      <div class="field-row3">
+        <div class="field"><label>Role / position</label><input id="f_role" placeholder="e.g. PMM Executive"></div>
+        <div class="field"><label>Channel</label>
+          <select id="f_channel" onchange="toggleChannelOther()"></select>
+        </div>
+        <div class="field"><label>Priority</label>
+          <select id="f_priority"><option>Medium</option><option>High</option><option>Low</option></select>
+        </div>
+      </div>
+      <div class="field full" id="channelOtherWrap" style="display:none;">
+        <label>What channel was it? (since you picked "Other")</label>
+        <input id="f_channelOther" placeholder="e.g. Twitter/X DM, WhatsApp group, campus drive...">
+      </div>
+      <div class="field full">
+        <label>How this started</label>
+        <select id="f_approach">
+          <option>Applied to a posted job</option>
+          <option>Cold outreach (no posting — you reached out first)</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Primary contact (recruiter / HR)</label><input id="f_contactName" placeholder="Name"></div>
+        <div class="field"><label>Their role</label><input id="f_contactRole" placeholder="e.g. Talent Acquisition"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Contact email</label><input id="f_contactEmail" placeholder="name@company.com"></div>
+        <div class="field"><label>LinkedIn profile</label><input id="f_contactLinkedin" placeholder="linkedin.com/in/..."></div>
+      </div>
+
+      <div class="field full">
+        <label>Upload JD / notes document (optional — .txt, .docx or .pdf)</label>
+        <div class="upload-box">
+          <input type="file" id="f_upload" accept=".txt,.docx,.pdf" onchange="handleFileUpload(event)">
+        </div>
+        <div id="uploadStatus" class="upload-status"></div>
+      </div>
+
+      <div class="field full">
+        <label>What the company wants (JD, skills, keywords) — type or auto-filled from upload</label>
+        <textarea id="f_jd" placeholder="Paste key JD points, must-have skills, tools they use..."></textarea>
+      </div>
+      <div class="field full">
+        <label>Company details / context</label>
+        <textarea id="f_companyDetails" placeholder="What they do, recent news, why you're a fit, tone to use..."></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Current stage</label><select id="f_stage"></select></div>
+        <div class="field"><label>Next follow-up date</label><input type="date" id="f_followup"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="deleteBtn" style="display:none;" onclick="deleteCompany()">Delete company</button>
+        <div class="right">
+          <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveCompany()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal" style="max-width:740px;">
+    <div class="modal-inner">
+      <button class="close-x" onclick="closeDetail()">✕</button>
+      <div class="detail-head">
+        <div>
+          <h2 id="d_name"></h2>
+          <p class="subtitle" style="margin:2px 0 0;" id="d_role"></p>
+          <span class="stage-pill" id="d_stagePill"></span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="editFromDetail()">Edit details</button>
+      </div>
+      <div class="stage-buttons" id="stageButtons"></div>
+      <div class="detail-grid">
+        <div class="detail-block"><h4>Primary contact</h4><p id="d_contact"></p></div>
+        <div class="detail-block"><h4>Channel &amp; dates</h4><p id="d_dates"></p></div>
+        <div class="detail-block" style="grid-column:1/-1;"><h4>What they want</h4><p id="d_jd"></p></div>
+        <div class="detail-block" style="grid-column:1/-1;"><h4>Company context</h4><p id="d_companyDetails"></p></div>
+      </div>
+
+      <div class="detail-block">
+        <h4>Interview rounds</h4>
+        <p class="subtitle" style="margin:0 0 10px;">Every round can have a different interviewer — add as many as you need.</p>
+        <div id="roundsList"></div>
+        <button class="btn btn-ghost btn-sm" onclick="toggleRoundForm()">+ Add interview round</button>
+        <div class="round-form" id="roundForm" style="display:none;">
+          <div class="field full"><label>Interviewer name</label><input id="r_name" placeholder="Who took this round?"></div>
+          <div class="field"><label>Their role</label><input id="r_role" placeholder="e.g. Marketing Head"></div>
+          <div class="field"><label>Round date</label><input type="date" id="r_date"></div>
+          <div class="field full"><label>Outcome</label>
+            <select id="r_outcome"><option>Scheduled</option><option>Awaiting feedback</option><option>Cleared — next round</option><option>Selected</option><option>Rejected</option></select>
+          </div>
+          <div class="field full"><label>Notes</label><textarea id="r_notes" placeholder="What was asked, how it went..."></textarea></div>
+          <div class="field full" style="display:flex;gap:8px;justify-content:flex-end;margin-top:0;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleRoundForm()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="addRound()">Save round</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-block">
+        <h4>Activity log</h4>
+        <div id="activityLog"></div>
+        <div class="log-add">
+          <select id="logType"><option>Note</option><option>Sent outreach</option><option>Replied</option><option>Follow-up sent</option><option>Rejected</option><option>Offer received</option></select>
+          <input id="logNote" placeholder="Quick note (optional)">
+          <button class="btn btn-primary btn-sm" onclick="addLogEntry()">Log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom confirm modal (replaces native confirm() which artifact sandboxes block) -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-inner">
+      <h2 id="confirmTitle">Are you sure?</h2>
+      <p class="subtitle" id="confirmMessage"></p>
+      <div class="modal-actions" style="justify-content:flex-end;">
+        <div class="right">
+          <button class="btn btn-ghost" id="confirmCancelBtn">Cancel</button>
+          <button class="btn btn-danger" id="confirmOkBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom multi-choice modal (replaces native confirm() used for merge/replace) -->
+<div class="overlay" id="choiceOverlay">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-inner">
+      <h2 id="choiceTitle">Choose an option</h2>
+      <p class="subtitle" id="choiceMessage"></p>
+      <div class="modal-actions" style="justify-content:flex-end;" id="choiceButtons"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;z-index:100;box-shadow:0 10px 30px rgba(27,42,65,0.25);max-width:80vw;text-align:center;"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+try{
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}catch(e){ /* guarded again at use-time */ }
+
+const STAGES = ["Researching","Contact Found","Outreach Sent","Replied","Interviewing","Offer","Rejected","No Response"];
+const STAGE_COLORS = {
+  "Researching":"#94A3B8","Contact Found":"#7C93C4","Outreach Sent":"#E8A33D","Replied":"#4A7C59",
+  "Interviewing":"#3E7CB1","Offer":"#2E8B57","Rejected":"#C96A5D","No Response":"#B0785F"
+};
+const PRIO_COLORS = {High:"#C96A5D", Medium:"#E8A33D", Low:"#94A3B8"};
+const CHANNELS = ["Email","LinkedIn","Internshala","Indeed","Naukri.com","Referral","Other"];
+const CHANNEL_STYLES = {
+  "Email":{bg:"#EAF1FB",bd:"#C9DCF5"}, "LinkedIn":{bg:"#E8F1FA",bd:"#BFDBEF"},
+  "Internshala":{bg:"#FFF0E5",bd:"#F5C9A8"}, "Indeed":{bg:"#E3F2E9",bd:"#BFE0CC"},
+  "Naukri.com":{bg:"#F3EAFB",bd:"#DCC3F5"}, "Referral":{bg:"#FFF3E0",bd:"#F5D9A8"},
+  "Other":{bg:"#EFEFEF",bd:"#D8D8D8"}
+};
+const ROUND_OUTCOME_COLORS = {
+  "Scheduled":"#3E7CB1","Awaiting feedback":"#E8A33D","Cleared — next round":"#4A7C59",
+  "Selected":"#2E8B57","Rejected":"#C96A5D"
+};
+
+let companies = [];
+let editingId = null;
+let detailId = null;
+let currentView = 'board';
+
+function uid(){ return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return '—'; return new Date(iso).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function daysSince(iso){ if(!iso) return null; return Math.floor((Date.now()-new Date(iso).getTime())/86400000); }
+function initials(str){
+  if(!str) return '—';
+  const parts = str.trim().split(/\s+/);
+  return (parts[0][0] + (parts[1]? parts[1][0] : '')).toUpperCase();
+}
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+/* Custom dialogs — artifact sandboxes block native confirm()/alert(), so we build our own. */
+function customConfirm(message, opts){
+  opts = opts || {};
+  return new Promise(resolve=>{
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmTitle').textContent = opts.title || 'Are you sure?';
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    okBtn.textContent = opts.okText || 'Confirm';
+    document.getElementById('confirmOverlay').classList.add('open');
+    function cleanup(result){
+      document.getElementById('confirmOverlay').classList.remove('open');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+function customChoice(message, buttons, title){
+  return new Promise(resolve=>{
+    document.getElementById('choiceMessage').textContent = message;
+    document.getElementById('choiceTitle').textContent = title || 'Choose an option';
+    const btnWrap = document.getElementById('choiceButtons');
+    btnWrap.innerHTML = '';
+    buttons.forEach((b,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'btn ' + (b.style||'btn-ghost');
+      btn.textContent = b.label;
+      btn.onclick = ()=>{ document.getElementById('choiceOverlay').classList.remove('open'); resolve(i); };
+      btnWrap.appendChild(btn);
+    });
+    document.getElementById('choiceOverlay').classList.add('open');
+  });
+}
+function showToast(message, isError){
+  const t = document.getElementById('toast');
+  t.textContent = message;
+  t.style.background = isError ? 'var(--coral)' : 'var(--ink)';
+  t.style.display = 'block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{ t.style.display='none'; }, 3200);
+}
+function channelLabel(c){ return c.channel==='Other' ? (c.channelOther||'Other') : c.channel; }
+function channelChip(c){
+  const style = CHANNEL_STYLES[c.channel] || CHANNEL_STYLES['Other'];
+  return `<span class="chip" style="background:${style.bg};border-color:${style.bd}">${escapeHtml(channelLabel(c))}</span>`;
+}
+
+/* This build stores data with the browser's built-in localStorage instead of
+   Claude's artifact storage, so it works as a standalone hosted page.
+   Each visitor's data lives only in their own browser — nothing is ever
+   sent anywhere, including to you as the site owner. */
+async function loadData(){
+  try{
+    const raw = localStorage.getItem('pipeline_companies_v1');
+    companies = raw ? JSON.parse(raw) : [];
+  }catch(e){ companies = []; }
+  migrateData();
+  render();
+}
+async function persist(){
+  try{
+    localStorage.setItem('pipeline_companies_v1', JSON.stringify(companies));
+  }catch(e){
+    console.error('Save failed', e);
+    showToast('Could not save — browser storage may be full or blocked by private browsing.', true);
+  }
+}
+
+/* Migrate older data shapes (previous stage names, missing fields) */
+function migrateData(){
+  let changed = false;
+  companies.forEach(c=>{
+    if(!c.rounds) { c.rounds = []; changed = true; }
+    if(["Interview R1","Interview R2","Final Round"].includes(c.stage)){
+      if(c.rounds.length===0){
+        c.rounds.push({id:uid(), interviewerName:c.contactName||'', interviewerRole:c.contactRole||'', date:c.lastActivity||todayISO(), outcome:'Scheduled', notes:'Migrated from previous stage: '+c.stage});
+      }
+      c.stage = 'Interviewing';
+      changed = true;
+    }
+    if(!c.channel){ c.channel='Email'; changed = true; }
+    if(!CHANNELS.includes(c.channel)){ c.channelOther = c.channel; c.channel = 'Other'; changed = true; }
+    if(!c.approach){ c.approach = 'Applied to a posted job'; changed = true; }
+  });
+  if(changed) persist();
+}
+
+/* ---------- Navigation ---------- */
+function switchView(view){
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+  ['board','companies','analytics','settings'].forEach(v=>{
+    document.getElementById('view-'+v).style.display = (v===view)?'block':'none';
+  });
+  render();
+}
+
+/* ---------- Selects ---------- */
+function populateSelects(){
+  document.getElementById('f_stage').innerHTML = STAGES.map(s=>`<option value="${s}">${s}</option>`).join('');
+  document.getElementById('f_channel').innerHTML = CHANNELS.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('channelFilter').innerHTML = '<option value="">All channels</option>' + CHANNELS.map(c=>`<option>${c}</option>`).join('');
+}
+function toggleChannelOther(){
+  const isOther = document.getElementById('f_channel').value === 'Other';
+  document.getElementById('channelOtherWrap').style.display = isOther ? 'block' : 'none';
+}
+
+/* ---------- Modal: Add/Edit ---------- */
+function openAddModal(){
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add company';
+  document.getElementById('deleteBtn').style.display = 'none';
+  ['f_name','f_role','f_contactName','f_contactRole','f_contactEmail','f_contactLinkedin','f_jd','f_companyDetails','f_followup','f_channelOther'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_channel').value = 'Email';
+  document.getElementById('f_priority').value = 'Medium';
+  document.getElementById('f_approach').value = 'Applied to a posted job';
+  document.getElementById('f_stage').value = 'Researching';
+  document.getElementById('uploadStatus').textContent = '';
+  document.getElementById('f_upload').value = '';
+  toggleChannelOther();
+  document.getElementById('overlay').classList.add('open');
+}
+function openEditModal(id){
+  const c = companies.find(x=>x.id===id);
+  if(!c) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit company';
+  document.getElementById('deleteBtn').style.display = 'inline-block';
+  document.getElementById('f_name').value = c.name||'';
+  document.getElementById('f_role').value = c.role||'';
+  document.getElementById('f_channel').value = c.channel||'Email';
+  document.getElementById('f_channelOther').value = c.channelOther||'';
+  document.getElementById('f_priority').value = c.priority||'Medium';
+  document.getElementById('f_approach').value = c.approach||'Applied to a posted job';
+  document.getElementById('f_contactName').value = c.contactName||'';
+  document.getElementById('f_contactRole').value = c.contactRole||'';
+  document.getElementById('f_contactEmail').value = c.contactEmail||'';
+  document.getElementById('f_contactLinkedin').value = c.contactLinkedin||'';
+  document.getElementById('f_jd').value = c.jd||'';
+  document.getElementById('f_companyDetails').value = c.companyDetails||'';
+  document.getElementById('f_stage').value = c.stage||'Researching';
+  document.getElementById('f_followup').value = c.followup||'';
+  document.getElementById('uploadStatus').textContent = '';
+  document.getElementById('f_upload').value = '';
+  toggleChannelOther();
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+
+async function saveCompany(){
+  const name = document.getElementById('f_name').value.trim();
+  if(!name){ showToast('Company name is required.', true); return; }
+  const data = {
+    name,
+    role: document.getElementById('f_role').value.trim(),
+    channel: document.getElementById('f_channel').value,
+    channelOther: document.getElementById('f_channelOther').value.trim(),
+    priority: document.getElementById('f_priority').value,
+    approach: document.getElementById('f_approach').value,
+    contactName: document.getElementById('f_contactName').value.trim(),
+    contactRole: document.getElementById('f_contactRole').value.trim(),
+    contactEmail: document.getElementById('f_contactEmail').value.trim(),
+    contactLinkedin: document.getElementById('f_contactLinkedin').value.trim(),
+    jd: document.getElementById('f_jd').value.trim(),
+    companyDetails: document.getElementById('f_companyDetails').value.trim(),
+    stage: document.getElementById('f_stage').value,
+    followup: document.getElementById('f_followup').value,
+  };
+  if(editingId){
+    const c = companies.find(x=>x.id===editingId);
+    Object.assign(c, data);
+    c.lastActivity = todayISO();
+  } else {
+    companies.push({
+      id: uid(), ...data, dateAdded: todayISO(), lastActivity: todayISO(), rounds: [],
+      log: [{date: todayISO(), type:'Note', note:'Company added to pipeline.'}]
+    });
+  }
+  await persist();
+  closeModal();
+  render();
+}
+async function deleteCompany(){
+  if(!editingId) return;
+  const ok = await customConfirm('Delete this company and all its activity log? This cannot be undone.', {title:'Delete company?', okText:'Delete'});
+  if(!ok) return;
+  companies = companies.filter(x=>x.id!==editingId);
+  await persist();
+  closeModal();
+  render();
+  showToast('Company deleted.');
+}
+
+/* ---------- Document upload / text extraction ---------- */
+async function handleFileUpload(ev){
+  const file = ev.target.files[0];
+  const statusEl = document.getElementById('uploadStatus');
+  if(!file) return;
+  statusEl.className = 'upload-status';
+  statusEl.textContent = 'Reading document...';
+  const ext = file.name.split('.').pop().toLowerCase();
+  try{
+    let text = '';
+    if(ext === 'txt' || ext === 'md'){
+      text = await file.text();
+    } else if(ext === 'docx'){
+      if(typeof mammoth === 'undefined') throw new Error('DOCX reader did not load.');
+      const buf = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({arrayBuffer: buf});
+      text = result.value;
+    } else if(ext === 'pdf'){
+      if(typeof pdfjsLib === 'undefined') throw new Error('PDF reader did not load.');
+      const buf = await file.arrayBuffer();
+      // Suppress pdf.js's harmless "fake worker" console warning during load.
+      const originalWarn = console.warn;
+      console.warn = function(...args){
+        if(args.some(a=>typeof a==='string' && a.toLowerCase().includes('fake worker'))) return;
+        originalWarn.apply(console, args);
+      };
+      let pdf;
+      try{
+        pdf = await pdfjsLib.getDocument({data: buf}).promise;
+      } finally {
+        console.warn = originalWarn;
+      }
+      let pages = [];
+      for(let i=1;i<=pdf.numPages;i++){
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        pages.push(content.items.map(it=>it.str).join(' '));
+      }
+      text = pages.join('\n\n');
+    } else {
+      throw new Error('Unsupported file type.');
+    }
+    text = text.trim();
+    if(!text){
+      statusEl.className = 'upload-status err';
+      statusEl.textContent = 'Could not find readable text in this file (it may be a scanned image) — please paste the details manually below.';
+      return;
+    }
+    const jdField = document.getElementById('f_jd');
+    jdField.value = jdField.value ? (jdField.value + '\n\n--- From ' + file.name + ' ---\n' + text) : text;
+    statusEl.className = 'upload-status ok';
+    statusEl.textContent = `Extracted text from ${file.name} into the field below — feel free to trim or edit it.`;
+  }catch(err){
+    statusEl.className = 'upload-status err';
+    statusEl.textContent = 'Could not read this file automatically (' + err.message + '). Please paste the text manually.';
+  }
+}
+
+/* ---------- Detail modal ---------- */
+function openDetail(id){
+  detailId = id;
+  const c = companies.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('d_name').textContent = c.name;
+  document.getElementById('d_role').textContent = c.role || 'Role not set';
+  const pill = document.getElementById('d_stagePill');
+  pill.textContent = c.stage;
+  pill.style.background = STAGE_COLORS[c.stage] || '#94A3B8';
+
+  document.getElementById('d_contact').innerHTML =
+    (c.contactName ? `<b>${escapeHtml(c.contactName)}</b>${c.contactRole? ' · '+escapeHtml(c.contactRole):''}<br>`:'No contact saved yet.<br>') +
+    (c.contactEmail ? `✉ ${escapeHtml(c.contactEmail)}<br>`:'') +
+    (c.contactLinkedin ? `in ${escapeHtml(c.contactLinkedin)}`:'');
+
+  document.getElementById('d_dates').innerHTML =
+    channelChip(c) + ` &nbsp; <span class="prio-dot" style="background:${PRIO_COLORS[c.priority]||'#94A3B8'}"></span> ${c.priority||'Medium'} priority<br>` +
+    `<span class="approach-tag">${escapeHtml(c.approach||'')}</span><br><br>` +
+    `Added: ${fmtDate(c.dateAdded)}<br>Last activity: ${fmtDate(c.lastActivity)}<br>Next follow-up: ${c.followup? fmtDate(c.followup): '—'}`;
+
+  document.getElementById('d_jd').textContent = c.jd || 'Nothing noted yet — add what the JD emphasizes and the skills they care about.';
+  document.getElementById('d_companyDetails').textContent = c.companyDetails || 'Nothing noted yet.';
+
+  document.getElementById('stageButtons').innerHTML = STAGES.map(s=>
+    `<button class="stage-btn ${s===c.stage?'active':''}" onclick="setStage('${c.id}','${s}')">${s}</button>`
+  ).join('');
+
+  renderRounds(c);
+
+  const log = document.getElementById('activityLog');
+  const entries = (c.log||[]).slice().reverse();
+  log.innerHTML = entries.length ? entries.map(e=>
+    `<div class="log-entry"><div class="log-date">${fmtDate(e.date)}</div><div><b>${escapeHtml(e.type)}</b>${e.note? ' — '+escapeHtml(e.note):''}</div></div>`
+  ).join('') : '<p style="color:var(--slate);font-size:13px;">No activity logged yet.</p>';
+
+  document.getElementById('roundForm').style.display = 'none';
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetail(){ document.getElementById('detailOverlay').classList.remove('open'); render(); }
+
+function renderRounds(c){
+  const list = document.getElementById('roundsList');
+  if(!c.rounds || c.rounds.length===0){
+    list.innerHTML = '<p style="color:var(--slate);font-size:13px;">No interview rounds logged yet.</p>';
+    return;
+  }
+  list.innerHTML = c.rounds.map((r,i)=>`
+    <div class="round-card">
+      <div class="rtitle">
+        <span>Round ${i+1}${r.interviewerName? ' — '+escapeHtml(r.interviewerName):''}</span>
+        <span class="round-outcome" style="background:${ROUND_OUTCOME_COLORS[r.outcome]||'#94A3B8'}">${escapeHtml(r.outcome||'Scheduled')}</span>
+      </div>
+      <div class="rmeta">${r.interviewerRole? escapeHtml(r.interviewerRole)+' · ':''}${fmtDate(r.date)}</div>
+      ${r.notes? `<div class="rmeta" style="margin-top:5px;">${escapeHtml(r.notes)}</div>` : ''}
+    </div>
+  `).join('');
+}
+function toggleRoundForm(){
+  const form = document.getElementById('roundForm');
+  const showing = form.style.display === 'block';
+  form.style.display = showing ? 'none' : 'block';
+  if(!showing){
+    ['r_name','r_role','r_notes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('r_date').value = todayISO();
+    document.getElementById('r_outcome').value = 'Scheduled';
+  }
+}
+async function addRound(){
+  const c = companies.find(x=>x.id===detailId);
+  if(!c) return;
+  c.rounds = c.rounds || [];
+  c.rounds.push({
+    id: uid(),
+    interviewerName: document.getElementById('r_name').value.trim(),
+    interviewerRole: document.getElementById('r_role').value.trim(),
+    date: document.getElementById('r_date').value || todayISO(),
+    outcome: document.getElementById('r_outcome').value,
+    notes: document.getElementById('r_notes').value.trim()
+  });
+  if(c.stage !== 'Offer' && c.stage !== 'Rejected'){ c.stage = 'Interviewing'; }
+  c.lastActivity = todayISO();
+  c.log = c.log || [];
+  c.log.push({date: todayISO(), type:'Interview round added', note:`Round ${c.rounds.length}${document.getElementById('r_name').value.trim()? ' with '+document.getElementById('r_name').value.trim():''}`});
+  await persist();
+  toggleRoundForm();
+  openDetail(detailId);
+}
+
+async function moveStage(id, stage){
+  const c = companies.find(x=>x.id===id);
+  if(!c) return;
+  c.stage = stage;
+  c.lastActivity = todayISO();
+  c.log = c.log || [];
+  c.log.push({date: todayISO(), type:'Stage change', note:`Moved to ${stage}`});
+  await persist();
+}
+async function setStage(id, stage){
+  await moveStage(id, stage);
+  openDetail(id);
+}
+async function addLogEntry(){
+  const c = companies.find(x=>x.id===detailId);
+  if(!c) return;
+  const type = document.getElementById('logType').value;
+  const note = document.getElementById('logNote').value.trim();
+  c.log = c.log || [];
+  c.log.push({date: todayISO(), type, note});
+  c.lastActivity = todayISO();
+  document.getElementById('logNote').value = '';
+  await persist();
+  openDetail(detailId);
+}
+function editFromDetail(){ const id = detailId; closeDetail(); openEditModal(id); }
+
+/* ---------- Drag and drop ---------- */
+function handleDragStart(ev, id){ ev.dataTransfer.setData('text/plain', id); ev.target.classList.add('dragging'); }
+function handleDragEnd(ev){ ev.target.classList.remove('dragging'); }
+function allowDrop(ev){ ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+function dragLeaveCol(ev){ ev.currentTarget.classList.remove('drag-over'); }
+async function handleDrop(ev, stage){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  const id = ev.dataTransfer.getData('text/plain');
+  await moveStage(id, stage);
+  render();
+}
+
+/* ---------- Stats ---------- */
+function computeStats(){
+  const total = companies.length;
+  const sent = companies.filter(c=>c.stage!=='Researching'&&c.stage!=='Contact Found').length;
+  const replied = companies.filter(c=>!['Researching','Contact Found','Outreach Sent','No Response'].includes(c.stage)).length;
+  const interviews = companies.filter(c=>c.stage==='Interviewing').length;
+  const noResponse = companies.filter(c=>c.stage==='No Response').length;
+  const offers = companies.filter(c=>c.stage==='Offer').length;
+  const replyRate = sent>0 ? Math.round((replied/sent)*100) : 0;
+  return {total, sent, replied, interviews, noResponse, offers, replyRate};
+}
+function renderStats(){
+  const s = computeStats();
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="num">${s.total}</div><div class="label">Companies</div></div>
+    <div class="stat"><div class="num">${s.sent}</div><div class="label">Outreach sent</div></div>
+    <div class="stat accent-sage"><div class="num">${s.replied}</div><div class="label">Replied (${s.replyRate}%)</div></div>
+    <div class="stat accent-amber"><div class="num">${s.interviews}</div><div class="label">Interviewing</div></div>
+    <div class="stat accent-coral"><div class="num">${s.noResponse}</div><div class="label">No response</div></div>
+    <div class="stat accent-sage"><div class="num">${s.offers}</div><div class="label">Offers</div></div>
+  `;
+}
+
+/* ---------- Board render ---------- */
+function getFiltered(searchId, sortId){
+  const q = (document.getElementById(searchId)?.value||'').toLowerCase();
+  const chFilter = document.getElementById('channelFilter')?.value||'';
+  const prioFilter = document.getElementById('prioFilter')?.value||'';
+  let filtered = companies.filter(c=>{
+    const hay = (c.name+c.role+c.contactName+c.jd+(c.channelOther||'')).toLowerCase();
+    const matchesQ = !q || hay.includes(q);
+    const matchesCh = !chFilter || c.channel===chFilter;
+    const matchesPrio = !prioFilter || c.priority===prioFilter;
+    return matchesQ && matchesCh && matchesPrio;
+  });
+  const sortBy = sortId ? (document.getElementById(sortId)?.value||'recent') : 'recent';
+  if(sortBy==='name') filtered.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(sortBy==='stale') filtered.sort((a,b)=> (daysSince(a.lastActivity)||0) < (daysSince(b.lastActivity)||0) ? 1 : -1);
+  else filtered.sort((a,b)=> new Date(b.lastActivity||b.dateAdded) - new Date(a.lastActivity||a.dateAdded));
+  return filtered;
+}
+
+function renderBoard(){
+  renderStats();
+  const filtered = getFiltered('searchInput', null);
+  const boardWrap = document.getElementById('boardWrap');
+  if(companies.length===0){
+    boardWrap.innerHTML = `<div class="empty-state"><h3>Your pipeline is empty</h3><p>Add the first company you want to reach out to, and start tracking from there.</p></div>`;
+    return;
+  }
+  let html = '<div class="board">';
+  STAGES.forEach(stage=>{
+    const inStage = filtered.filter(c=>c.stage===stage);
+    html += `<div class="col" ondragover="allowDrop(event)" ondragleave="dragLeaveCol(event)" ondrop="handleDrop(event,'${stage}')">
+      <div class="col-head"><span class="col-title"><span class="col-dot" style="background:${STAGE_COLORS[stage]}"></span>${stage}</span><span class="col-count">${inStage.length}</span></div>`;
+    if(inStage.length===0){
+      html += `<div class="empty-col">Drop here</div>`;
+    } else {
+      inStage.forEach(c=>{
+        const d = daysSince(c.lastActivity);
+        const staleFlag = (d!==null && d>=7 && !['Offer','Rejected','No Response'].includes(c.stage));
+        const roundInfo = (c.stage==='Interviewing' && c.rounds && c.rounds.length) ? `<div class="approach-tag" style="margin-top:4px;">Round ${c.rounds.length} logged</div>` : '';
+        html += `<div class="card" draggable="true" ondragstart="handleDragStart(event,'${c.id}')" ondragend="handleDragEnd(event)" onclick="openDetail('${c.id}')" style="border-left-color:${STAGE_COLORS[stage]}">
+          <div class="card-top">
+            <div class="avatar">${initials(c.contactName||c.name)}</div>
+            <span class="prio-dot" style="background:${PRIO_COLORS[c.priority]||'#94A3B8'}" title="${c.priority||'Medium'} priority"></span>
+          </div>
+          <p class="cname" style="margin-top:8px;">${escapeHtml(c.name)}</p>
+          <p class="crole">${escapeHtml(c.role||'Role not set')}</p>
+          <div class="meta">
+            ${channelChip(c)}
+            <span class="${staleFlag?'stale':''}">${d!==null? d+'d ago' : ''}</span>
+          </div>
+          ${roundInfo}
+        </div>`;
+      });
+    }
+    html += `</div>`;
+  });
+  html += '</div>';
+  boardWrap.innerHTML = html;
+}
+
+/* ---------- Companies table render ---------- */
+function renderCompaniesTable(){
+  const filtered = getFiltered('searchInput2', 'sortBy2');
+  const wrap = document.getElementById('tableWrap');
+  if(companies.length===0){
+    wrap.innerHTML = `<div class="empty-state"><h3>No companies yet</h3><p>Add one from the Board or Companies page.</p></div>`;
+    return;
+  }
+  let rows = filtered.map(c=>{
+    const d = daysSince(c.lastActivity);
+    return `<tr class="row-hover" onclick="openDetail('${c.id}')">
+      <td><b>${escapeHtml(c.name)}</b></td>
+      <td>${escapeHtml(c.role||'—')}</td>
+      <td><span class="badge" style="background:${STAGE_COLORS[c.stage]}">${c.stage}</span></td>
+      <td>${channelChip(c)}</td>
+      <td>${escapeHtml(c.approach||'')}</td>
+      <td>${escapeHtml(c.contactName||'—')}</td>
+      <td>${c.rounds? c.rounds.length : 0}</td>
+      <td>${d!==null? d+'d ago' : '—'}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table>
+    <thead><tr><th>Company</th><th>Role</th><th>Stage</th><th>Channel</th><th>How it started</th><th>Contact</th><th>Rounds</th><th>Last activity</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ---------- Analytics render ---------- */
+function renderAnalytics(){
+  const wrap = document.getElementById('analyticsWrap');
+  if(companies.length===0){
+    wrap.innerHTML = `<div class="empty-state"><h3>Nothing to show yet</h3><p>Add a few companies and check back here.</p></div>`;
+    return;
+  }
+  const s = computeStats();
+  const maxStageCount = Math.max(1, ...STAGES.map(st=>companies.filter(c=>c.stage===st).length));
+  const funnelHtml = STAGES.map(st=>{
+    const count = companies.filter(c=>c.stage===st).length;
+    const pct = Math.round((count/maxStageCount)*100);
+    return `<div class="bar-row"><div class="bar-label">${st}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${STAGE_COLORS[st]}"></div></div><div class="bar-val">${count}</div></div>`;
+  }).join('');
+
+  const chCounts = {};
+  companies.forEach(c=>{ const l = channelLabel(c); chCounts[l] = (chCounts[l]||0)+1; });
+  const maxCh = Math.max(1, ...Object.values(chCounts));
+  const channelHtml = Object.keys(chCounts).map(ch=>{
+    const count = chCounts[ch];
+    const pct = Math.round((count/maxCh)*100);
+    return `<div class="bar-row"><div class="bar-label">${escapeHtml(ch)}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--amber)"></div></div><div class="bar-val">${count}</div></div>`;
+  }).join('');
+
+  const weeks = [];
+  for(let i=5;i>=0;i--){
+    const end = new Date(); end.setDate(end.getDate() - i*7);
+    const start = new Date(end); start.setDate(start.getDate()-6);
+    weeks.push({start, end, label: start.toLocaleDateString('en-IN',{day:'numeric',month:'short'})});
+  }
+  const weekCounts = weeks.map(w=>{
+    let count = 0;
+    companies.forEach(c=>(c.log||[]).forEach(e=>{
+      const d = new Date(e.date);
+      if(d>=w.start && d<=w.end) count++;
+    }));
+    return count;
+  });
+  const maxWeek = Math.max(1, ...weekCounts);
+  const weekHtml = weeks.map((w,i)=>{
+    const pct = Math.round((weekCounts[i]/maxWeek)*100);
+    return `<div class="bar-row"><div class="bar-label">${w.label}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--sage)"></div></div><div class="bar-val">${weekCounts[i]}</div></div>`;
+  }).join('');
+
+  const appliedCount = companies.filter(c=>c.approach==='Applied to a posted job').length;
+  const coldCount = companies.length - appliedCount;
+
+  wrap.innerHTML = `<div class="analytics-grid">
+    <div class="panel"><h3>Pipeline funnel</h3>${funnelHtml}</div>
+    <div class="panel"><h3>Channel breakdown</h3>${channelHtml}
+      <div class="big-stat"><div class="num">${s.replyRate}%</div><div class="label">Reply rate on sent outreach</div></div>
+    </div>
+    <div class="panel"><h3>How companies started</h3>
+      <div class="bar-row"><div class="bar-label">Applied to posting</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((appliedCount/companies.length)*100)}%;background:var(--sage)"></div></div><div class="bar-val">${appliedCount}</div></div>
+      <div class="bar-row"><div class="bar-label">Cold outreach</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((coldCount/companies.length)*100)}%;background:var(--amber)"></div></div><div class="bar-val">${coldCount}</div></div>
+    </div>
+    <div class="panel"><h3>Activity — last 6 weeks</h3>${weekHtml}</div>
+  </div>`;
+}
+
+/* ---------- Settings: export/import/clear ---------- */
+function exportData(){
+  const blob = new Blob([JSON.stringify(companies, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'pipeline-backup-' + todayISO() + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+async function importData(ev){
+  const file = ev.target.files[0];
+  const statusEl = document.getElementById('importStatus');
+  if(!file) return;
+  statusEl.className = 'upload-status';
+  statusEl.textContent = 'Reading file...';
+  try{
+    if(!file.name.toLowerCase().endsWith('.json')){
+      throw new Error('This needs to be a .json backup file exported from this tool, not a resume or JD document.');
+    }
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if(!Array.isArray(parsed)) throw new Error('This file is not a recognized pipeline backup.');
+    const choice = await customChoice(
+      'How should this backup be applied to your current data?',
+      [{label:'Cancel', style:'btn-ghost'},{label:'Merge', style:'btn-ghost'},{label:'Replace all', style:'btn-danger'}],
+      'Import backup'
+    );
+    if(choice===0){ ev.target.value=''; statusEl.textContent=''; return; }
+    const mode = (choice===1);
+    if(mode){
+      const existingIds = new Set(companies.map(c=>c.id));
+      parsed.forEach(c=>{ if(!existingIds.has(c.id)) companies.push(c); });
+    } else {
+      companies = parsed;
+    }
+    migrateData();
+    await persist();
+    render();
+    statusEl.className = 'upload-status ok';
+    statusEl.textContent = `Imported ${parsed.length} companies successfully.`;
+  }catch(err){
+    statusEl.className = 'upload-status err';
+    statusEl.textContent = 'Could not import this file: ' + err.message;
+  }
+  ev.target.value = '';
+}
+async function clearAllData(){
+  const ok1 = await customConfirm('This will permanently delete all companies and activity logs. Continue?', {title:'Clear all data?', okText:'Continue'});
+  if(!ok1) return;
+  const ok2 = await customConfirm('Are you absolutely sure? This cannot be undone.', {title:'Final check', okText:'Yes, delete everything'});
+  if(!ok2) return;
+  companies = [];
+  await persist();
+  render();
+  showToast('All data cleared.');
+}
+
+/* ---------- Master render ---------- */
+function render(){
+  if(currentView==='board') renderBoard();
+  else if(currentView==='companies') renderCompaniesTable();
+  else if(currentView==='analytics') renderAnalytics();
+}
+
+populateSelects();
+loadData();
+</script>
+</body>
+</html>
